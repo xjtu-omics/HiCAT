@@ -22,7 +22,7 @@ Development environment: Linux
 Development tool: Pycharm  
 
 ## Installation and Quick start
-#### Please use just the `centromere DNA sequence` rather than the whole chromosome sequence!
+#### Please use just the `centromere DNA sequence` rather than the whole chromosome sequence.
 #### Source code (g++ version 5.3.1 or higher for stringdecomposer)
 ```Bash
 #install
