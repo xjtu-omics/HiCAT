@@ -260,7 +260,7 @@ def miningMonomerTDPattern(new_monomer_sequence, max_hor_len):
                     tmp_top_layer.append(td_pattern_item)
                     all_layer.append(td_pattern_item)
 
-                    for j in range(absolute_start, absolute_end + 1):
+                    for j in range(absolute_start, absolute_end):
                         all_layer_marker.add(j)
                         # print('aaaaaaa')
                         # print(all_layer_marker)
@@ -341,7 +341,7 @@ def miningMonomerTDPattern(new_monomer_sequence, max_hor_len):
                     all_layer.append(top_layer_ins)
                     # print(absolute_start)
                     # print(absolute_end)
-                    for j in range(absolute_start, absolute_end + 1):
+                    for j in range(absolute_start, absolute_end):
                         all_layer_marker.add(j)
                         # print('kkkk')
                         # print(all_layer_marker)
@@ -389,7 +389,7 @@ def miningMonomerTDPattern(new_monomer_sequence, max_hor_len):
                             while True:
                                 start_td_item = new_start_td_item
                                 end_td_item = new_end_td_item
-                                if end_td_item > relative_end:
+                                if end_td_item > processed_relative_end:
                                     break
                                 adding_flag = 1
                                 if monomer_sequence_index_right[end_td_item] in all_layer_marker:
@@ -472,7 +472,7 @@ def miningMonomerTDPattern(new_monomer_sequence, max_hor_len):
                     new_top_layer.append(top_layer_ins)
                     tmp_top_layer.append(top_layer_ins)
                     all_layer.append(top_layer_ins)
-                    for j in range(processed_absolute_start, processed_absolute_end + 1):
+                    for j in range(processed_absolute_start, processed_absolute_end):
                         all_layer_marker.add(j)
                         # print('llll')
                         # print(all_layer_marker)
@@ -494,31 +494,29 @@ def miningMonomerTDPattern(new_monomer_sequence, max_hor_len):
             for i in tmp_top_layer:
                 relative_start = i[5]
                 relative_end = i[6]
-                # change for reads -1 to *
                 for j in range(relative_end - relative_start + 1):
-                    tmp_monomer_sequence_left[relative_start + j] = '*'
-                    tmp_monomer_sequence_right[relative_end - j] = '*'
+                    tmp_monomer_sequence_left[relative_start + j] = '-1'
+                    tmp_monomer_sequence_right[relative_end - j] = '-1'
 
                 for j in range(start_d):
                     tmp_monomer_sequence_left[relative_start + j] = monomer_sequence[relative_start + j]
                     tmp_monomer_sequence_right[relative_end - j] = monomer_sequence[relative_end - j]
 
             for i in range(len(tmp_monomer_sequence_left)):
-                if tmp_monomer_sequence_left[i] == '*':
+                if tmp_monomer_sequence_left[i] == '-1':
                     continue
                 else:
                     new_monomer_sequence.append(monomer_sequence[i])
                     new_monomer_sequence_index_left.append(monomer_sequence_index_left[i])
 
             for i in range(len(tmp_monomer_sequence_right)):
-                if tmp_monomer_sequence_right[i] == '*':
+                if tmp_monomer_sequence_right[i] == '-1':
                     continue
                 else:
                     new_monomer_sequence_index_right.append(monomer_sequence_index_right[i])
 
             start_d = 1
     return new_monomer_sequence, top_layer, all_layer
-
 def buildingHor(block_sequence,all_layer):
     final_HOR = {}
     for i in all_layer:
