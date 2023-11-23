@@ -495,22 +495,22 @@ def miningMonomerTDPattern(new_monomer_sequence, max_hor_len):
                 relative_start = i[5]
                 relative_end = i[6]
                 for j in range(relative_end - relative_start + 1):
-                    tmp_monomer_sequence_left[relative_start + j] = '-1'
-                    tmp_monomer_sequence_right[relative_end - j] = '-1'
+                    tmp_monomer_sequence_left[relative_start + j] = '*'
+                    tmp_monomer_sequence_right[relative_end - j] = '*'
 
                 for j in range(start_d):
                     tmp_monomer_sequence_left[relative_start + j] = monomer_sequence[relative_start + j]
                     tmp_monomer_sequence_right[relative_end - j] = monomer_sequence[relative_end - j]
 
             for i in range(len(tmp_monomer_sequence_left)):
-                if tmp_monomer_sequence_left[i] == '-1':
+                if tmp_monomer_sequence_left[i] == '*':
                     continue
                 else:
                     new_monomer_sequence.append(monomer_sequence[i])
                     new_monomer_sequence_index_left.append(monomer_sequence_index_left[i])
 
             for i in range(len(tmp_monomer_sequence_right)):
-                if tmp_monomer_sequence_right[i] == '-1':
+                if tmp_monomer_sequence_right[i] == '*':
                     continue
                 else:
                     new_monomer_sequence_index_right.append(monomer_sequence_index_right[i])
