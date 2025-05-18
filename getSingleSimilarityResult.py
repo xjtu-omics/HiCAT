@@ -378,7 +378,37 @@ def getResult(similarity,base_sequence,result_dir,show_hor_number,show_hor_min_r
         pattern_static[i] = [pattern_name,repeat_number]
         pattern_index += 1
     pattern_repeat_file.close()
-    Plot(monomer_sequence, patterns, pattern_static, block_sequence, outdir_best,
+
+    all_layer = {}
+
+    for seq in pattern_static.keys():
+        all_layer[seq] = []
+
+    all_layer_file = result_dir + '/out_all_layer' + similarity + '.xls'
+    with open(all_layer_file, 'r') as f:
+        for line in f:
+            line = line.strip().split('\t')
+            start = line[0]
+            end = line[1]
+            count = line[2]
+            td_monomer_pattern = line[3]
+            reverse_td_monomer_pattern = "_".join(td_monomer_pattern.split('_')[::-1])
+            for seq in patterns.keys():
+                if len(seq) != len(td_monomer_pattern):
+                    continue
+                db_seq = seq + '_' + seq
+                if td_monomer_pattern in db_seq:
+                    if seq in all_layer.keys():
+                        all_layer[seq].append([int(start), int(end), '+', td_monomer_pattern, int(count)])
+                    else:
+                        all_layer[seq] = [[int(start), int(end), '+', td_monomer_pattern, int(count)]]
+                elif reverse_td_monomer_pattern in db_seq:
+                    if seq in all_layer.keys():
+                        all_layer[seq].append([int(start), int(end), '+', td_monomer_pattern, int(count)])
+                    else:
+                        all_layer[seq] = [[int(start), int(end), '+', td_monomer_pattern, int(count)]]
+
+    Plot(monomer_sequence, all_layer, pattern_static, block_sequence, outdir_best,
          show_number=show_hor_number,show_min_repeat_number=show_hor_min_repeat_number)
 
     monomer_table = readCluster(cluster_file)

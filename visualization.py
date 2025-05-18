@@ -221,10 +221,77 @@ def buildHORFile(patterns, pattern_static,base_sequence,monomer_sequence,block_s
     out_hor_raw_file.close()
     out_hor_normal_file.close()
 
-def Plot(monomer_sequence, patterns,pattern_static, block_seuqence, outdir, show_number = 5, show_min_repeat_number = 10):
-    fig, ax = plt.subplots(figsize=(10, 10))
-    monomer_len = len(monomer_sequence)
+def readModPlot(file):
+    label_map = {
+        (0, 90): '1',
+        (90, 97.5): '2',
+        (97.5, 97.75): '3',
+        (97.75, 98): '4',
+        (98, 98.25): '5',
+        (98.25, 98.5): '6',
+        (98.5, 98.75): '7',
+        (98.75, 99): '8',
+        (99, 99.25): '9',
+        (99.25, 99.5): '10',
+        (99.5, 99.75): '11',
+        (99.75, 101): '12'
+    }
 
+    color_map = {
+        '0': '#ffffff',
+        '1': '#4b3991',
+        '2': '#2974af',
+        '3': '#4a9da8',
+        '4': '#57b894',
+        '5': '#9dd893',
+        '6': '#e1f686',
+        '7': '#ffffb2',
+        '8': '#fdda79',
+        '9': '#fb9e4f',
+        '10': '#ee5634',
+        '11': '#c9273e',
+        '12': '#8a0033'
+    }
+
+    block_table = {}
+    with open(file, 'r') as f:
+        f.readline()
+        while True:
+            line = f.readline()[:-1]
+            if not line:
+                break
+            items = line.split('\t')
+            key1 = items[0] + '_' + items[1] + '_' + items[2]
+            key2 = items[3] + '_' + items[4] + '_' + items[5]
+            value = float(items[6])
+            curr_label = '0'
+            for (start, end), label in label_map.items():
+                if start <= value < end:
+                    curr_label = label
+            color = color_map[curr_label]
+            if key1 not in block_table.keys():
+                block_table[key1] = {}
+                block_table[key1][key2] = color
+            else:
+                block_table[key1][key2] = color
+
+    all_block_table = {}
+    for i in block_table.keys():
+        all_block_table[i] = {}
+        for j in block_table.keys():
+            if j in all_block_table.keys() and j != i:
+                continue
+            all_block_table[i][j] = ''
+
+    for i in block_table.keys():
+        for j in block_table[i]:
+            all_block_table[i][j] = block_table[i][j]
+
+    return all_block_table
+
+def Plot(base_sequence, all_block_table, window_size, patterns,pattern_static, block_seuqence, outdir, show_number = 5, show_min_repeat_number = 10):
+    fig, ax = plt.subplots(figsize=(10, 10))
+    base_sequence_len = len(base_sequence)
     color = '#D14524'
     custom_lines = []
     legend_text = []
@@ -246,29 +313,57 @@ def Plot(monomer_sequence, patterns,pattern_static, block_seuqence, outdir, show
     for i in re_patterns:
         # print(pattern_static[i])
         pattern_name = pattern_static[i][0]
-        xy = np.array([0, pattern_count * monomer_len / 25])
-        rect = mpathes.Rectangle(xy, monomer_len, monomer_len / 50, color='#D0CECE')
+        xy = np.array([0, pattern_count * base_sequence_len / 25])
+        rect = mpathes.Rectangle(xy, base_sequence_len, base_sequence_len / 50, color='#D0CECE')
         ax.add_patch(rect)
         custom_lines.append(Line2D([0], [0], color=color, lw=2))
         legend_text.append(i)
         for j in patterns[i]:
-            start = j[0]
-            end = j[1]
-            xy2 = np.asarray([start, pattern_count * monomer_len / 25])
-            rect = mpathes.Rectangle(xy2, end + 1 - start, monomer_len / 50, color=color,lw=0)
+            start = block_seuqence[j[0]][0]
+            end = block_seuqence[j[1]][1]
+            xy2 = np.asarray([start, pattern_count * base_sequence_len / 25])
+            rect = mpathes.Rectangle(xy2, end + 1 - start, base_sequence_len / 50, color=color, lw=0)
             ax.add_patch(rect)
-        plt.text(monomer_len + monomer_len / 50, pattern_count * monomer_len / 25, pattern_name, fontsize=10)
+        plt.text(base_sequence_len + base_sequence_len / 50, pattern_count * base_sequence_len / 25, pattern_name,
+                 fontsize=10)
         pattern_count += 1
 
-    xy3 = np.asarray([0, -monomer_len / 50])
-    rect = mpathes.Rectangle(xy3, monomer_len, monomer_len / 1000, color='black')
+    # # 如果没给出modplot文件就不画了
+    if len(all_block_table.keys()) != 0:
+        # 继续添加菱形三角，起点
+        window_size = window_size  # 同一排加每个2500，跨排起点横移5000
+        col_index = 0
+
+        for i in all_block_table.keys():
+            row_index = 0
+            for j in all_block_table[i].keys():
+                color = all_block_table[i][j]
+                if color == '':
+                    row_index += 1
+                    continue
+                else:
+                    start_x = col_index * window_size + row_index * (window_size / 2)
+                    start_y = pattern_count * base_sequence_len / 25 + row_index * (window_size / 2)
+                    diamond_points = [
+                        (start_x + (window_size / 2), start_y - (window_size / 2)),
+                        (start_x + window_size, start_y),
+                        (start_x + (window_size / 2), start_y + (window_size / 2)),
+                        (start_x, start_y)
+                    ]
+                    diamond = mpathes.Polygon(diamond_points, closed=True, color=color, lw=0)
+                    ax.add_patch(diamond)
+                    row_index += 1
+            col_index += 1
+
+    xy3 = np.asarray([0, -base_sequence_len / 50])
+    rect = mpathes.Rectangle(xy3, base_sequence_len, base_sequence_len / 1000, color='black')
     ax.add_patch(rect)
-    point_bar = int(monomer_len / 10)
+    point_bar = int(base_sequence_len / 10)
     for i in range(10):
-        xy3 = np.asarray([0 + i * point_bar, -monomer_len / 50])
-        rect = mpathes.Rectangle(xy3, monomer_len / 1000, -monomer_len / 100, color='black')
+        xy3 = np.asarray([0 + i * point_bar, -base_sequence_len / 50])
+        rect = mpathes.Rectangle(xy3, base_sequence_len / 1000, -base_sequence_len / 100, color='black')
         ax.add_patch(rect)
-        plt.text(0 + i * point_bar, -monomer_len / 50 - monomer_len / 50, str(block_seuqence[0 + i * point_bar][0]), fontsize=5)
+        plt.text(0 + i * point_bar, -base_sequence_len / 50 - base_sequence_len / 50, str(i * point_bar), fontsize=5)
 
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
@@ -348,7 +443,7 @@ def readAllLayer(all_layer_file):
     return all_layer
 
 
-def getResult(base_sequence,outdir,similarity,show_hor_number,show_hor_min_repeat_number):
+def getResult(base_sequence, all_block_table, outdir,similarity, window_size, show_hor_number,show_hor_min_repeat_number):
     outdir_best = outdir + '/out'
     if not os.path.exists(outdir_best):
         os.mkdir(outdir_best)
@@ -381,7 +476,37 @@ def getResult(base_sequence,outdir,similarity,show_hor_number,show_hor_min_repea
         pattern_static[i] = [pattern_name, repeat_number]
         pattern_index += 1
     pattern_repeat_file.close()
-    Plot(monomer_sequence, patterns, pattern_static, block_sequence, outdir_best,
+
+    all_layer = {}
+
+    for seq in pattern_static.keys():
+        all_layer[seq] = []
+
+    all_layer_file = outdir + '/out_all_layer' + similarity + '.xls'
+    with open(all_layer_file, 'r') as f:
+        for line in f:
+            line = line.strip().split('\t')
+            start = line[0]
+            end = line[1]
+            count = line[2]
+            td_monomer_pattern = line[3]
+            reverse_td_monomer_pattern = "_".join(td_monomer_pattern.split('_')[::-1])
+            for seq in patterns.keys():
+                if len(seq) != len(td_monomer_pattern):
+                    continue
+                db_seq = seq + '_' + seq
+                if td_monomer_pattern in db_seq:
+                    if seq in all_layer.keys():
+                        all_layer[seq].append([int(start), int(end), '+', td_monomer_pattern, int(count)])
+                    else:
+                        all_layer[seq] = [[int(start), int(end), '+', td_monomer_pattern, int(count)]]
+                elif reverse_td_monomer_pattern in db_seq:
+                    if seq in all_layer.keys():
+                        all_layer[seq].append([int(start), int(end), '+', td_monomer_pattern, int(count)])
+                    else:
+                        all_layer[seq] = [[int(start), int(end), '+', td_monomer_pattern, int(count)]]
+
+    Plot(base_sequence, all_block_table, window_size, all_layer, pattern_static, block_sequence, outdir_best,
          show_number=show_hor_number, show_min_repeat_number=show_hor_min_repeat_number)
 
     monomer_table = readCluster(cluster_file)
@@ -462,12 +587,17 @@ def main():
     parser = argparse.ArgumentParser(description="Visualization HORs")
     parser.add_argument("-r", "--result_dir")
     parser.add_argument("-s", "--similarity")
-    parser.add_argument("-sp", "--show_hor_number", type=int)
-    parser.add_argument("-sn", "--show_hor_min_repeat_number", type=int)
+    parser.add_argument("-m", "--moddotplot_file", required=False, default="")
+    parser.add_argument("-w", "--window_size", required=False, type=int, default=5000)
+    parser.add_argument("-sp", "--show_hor_number", type=int, default=5)
+    parser.add_argument("-sn", "--show_hor_min_repeat_number", type=int, default=10)
     args = parser.parse_args()
 
     result_dir = args.result_dir
     similarity = args.similarity
+
+    moddotplot_file = args.moddotplot_file
+    window_size = args.window_size
 
     show_hor_number = args.show_hor_number
     show_hor_min_repeat_number = args.show_hor_min_repeat_number
@@ -480,7 +610,11 @@ def main():
         f.readline()
         base_sequence = f.readline()[:-1]
 
-    getResult(base_sequence, result_dir, similarity, show_hor_number, show_hor_min_repeat_number)
+    all_block_table = {}
+    if moddotplot_file != '':
+        all_block_table = readModPlot(moddotplot_file)
+
+    getResult(base_sequence, all_block_table, result_dir, similarity, window_size, show_hor_number, show_hor_min_repeat_number)
 
 
 
